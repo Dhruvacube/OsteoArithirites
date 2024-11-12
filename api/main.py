@@ -83,6 +83,6 @@ def upload_file(name: str):
     ), 200
 
 if __name__ == '__main__':
-    if not os.path.exists(UPLOAD_FOLDER):ssss
+    if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
