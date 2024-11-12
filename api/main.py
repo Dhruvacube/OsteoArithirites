@@ -4,19 +4,20 @@ from werkzeug.utils import secure_filename
 import secrets
 import tensorflow as tf
 from tensorflow import keras # type: ignore
+import numpy as np
 
 # Importing models
-from models.KLGrade.alexnet import load_model as load_alexnet # type: ignore
-from models.KLGrade.densenet201 import load_model as load_densenet201 # type: ignore
-from models.KLGrade.googlenet import load_model as load_googlenet # type: ignore
-from models.KLGrade.inceptionresnetv2 import load_model as load_inceptionresnetv2 # type: ignore
-from models.WithoutKLGrade.googlenet import load_model as load_googlenet_without_klgrade # type: ignore
+import models.KLGrade.alexnet
+import models.KLGrade.densenet201
+import models.KLGrade.googlenet
+import models.KLGrade.inceptionresnetv2 
+import models.WithoutKLGrade.googlenet
 
-alexnet = load_alexnet()
-densenet201 = load_densenet201()
-googlenet = load_googlenet()
-inceptionresnetv2 = load_inceptionresnetv2()
-googlenet_without_klgrade = load_googlenet_without_klgrade()
+alexnet = models.KLGrade.alexnet.load_model()
+densenet201 = models.KLGrade.densenet201.load_model()
+googlenet = models.KLGrade.googlenet.load_model()
+inceptionresnetv2 = models.KLGrade.inceptionresnetv2.load_model()
+googlenet_without_klgrade = models.WithoutKLGrade.googlenet.load_model()
 
 img_height, img_width = 224, 224
 
@@ -49,14 +50,19 @@ def upload_file(name: str):
     
     if name.lower() == 'alexnet':
         model = alexnet
+        class_names = ["0", "1", "2", "3", "4"]
     elif name.lower() == 'densenet201':
         model = densenet201
+        class_names = ["0", "1", "2", "3", "4"]
     elif name.lower() == 'googlenet':
         model = googlenet
+        class_names = ["0", "1", "2", "3", "4"]
     elif name.lower() == 'inceptionresnetv2':
         model = inceptionresnetv2
+        class_names = ["0", "1", "2", "3", "4"]
     elif name.lower() == 'googlenet_without_klgrade':
         model = googlenet_without_klgrade
+        class_names = ["normal", "patient"]
     
     img = tf.keras.utils.load_img( # type: ignore
         os.path.join(app.config['UPLOAD_FOLDER'], filename), target_size=(img_height, img_width)
@@ -67,7 +73,13 @@ def upload_file(name: str):
     predictions = model.predict(img_array)
     score = tf.nn.softmax(predictions[0])
     
-    return jsonify({'message': 'File uploaded successfully'}), 200
+    return jsonify(
+        {
+            'message': "This image most likely belongs to {} with a {:.2f} percent confidence.".format(class_names[np.argmax(score)], 100 * np.max(score)),
+            'class': class_names[np.argmax(score)],
+            'confidence': 100 * np.max(score)
+        }
+    ), 200
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
