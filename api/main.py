@@ -76,12 +76,12 @@ def upload_file(name: str):
     return jsonify(
         {
             'message': "This image most likely belongs to {} with a {:.2f} percent confidence.".format(class_names[np.argmax(score)], 100 * np.max(score)),
-            'class': class_names[np.argmax(score)],
-            'confidence': 100 * np.max(score)
+            'class': str(class_names[np.argmax(score)]),
+            'confidence': str(100 * np.max(score))
         }
     ), 200
 
 if __name__ == '__main__':
-    if not os.path.exists(UPLOAD_FOLDER):
+    if not os.path.exists(UPLOAD_FOLDER):ssss
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
