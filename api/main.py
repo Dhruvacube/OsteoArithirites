@@ -69,9 +69,10 @@ def upload_file(name: str):
     )
     img_array = tf.keras.utils.img_to_array(img) # type: ignore
     img_array = tf.expand_dims(img_array, 0) # Create a batch
-
+    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], filename))
     predictions = model.predict(img_array)
     score = tf.nn.softmax(predictions[0])
+    
     
     return jsonify(
         {
