@@ -5,6 +5,9 @@ import secrets
 import tensorflow as tf
 from tensorflow import keras # type: ignore
 import numpy as np
+from flasgger import Swagger
+from typing import Literal
+import cv2
 
 # Importing models
 import models.KLGrade.alexnet
@@ -22,12 +25,20 @@ googlenet_without_klgrade = models.WithoutKLGrade.googlenet.load_model()
 img_height, img_width = 224, 224
 
 app = Flask(__name__)
+swagger = Swagger(app, template={
+    "info": {
+        "title": "API Endpoint Documentation",
+        "version": "1.0.0"
+    }
+})
 
 UPLOAD_FOLDER = 'uploads'
 MODEL_NAMES = ['alexnet', 'densenet201', 'googlenet', 'inceptionresnetv2', 'googlenet_without_klgrade']
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1000 * 1000
+
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -35,6 +46,41 @@ def allowed_file(filename):
 
 @app.route('/predict/<name>', methods=['POST'])
 def upload_file(name: str):
+    """The model prediction and KL Grading for the osteoarthritis X-Rays
+        ---
+        parameters:
+           - name: name
+             in: path
+             type: string
+             enum: ['alexnet', 'densenet201', 'googlenet', 'inceptionresnetv2', 'googlenet_without_klgrade']
+             required: true
+             default: alexnet
+           - name: image
+             in: formData
+             required: true
+             type: file
+        consumes:
+          - multipart/form-data
+        responses:
+          200:
+            description: The model prediction and KL Grade if applicable.
+            schema:
+                $ref: '#/definitions/Prediction'
+            examples:
+                class: 'patient'
+                confidence: '73.105835'
+                message: 'This image most likely belongs to patient with a 73.11 percent confidence.'
+        definitions:
+          Prediction:
+            type: object
+            properties:
+              message:
+                type: string
+              class:
+                type: string
+              confidence:
+                type: string
+        """
     if name.lower() not in MODEL_NAMES:
         return jsonify({'error': 'Model not found'}), 400
     if 'image' not in request.files:
@@ -68,6 +114,7 @@ def upload_file(name: str):
         os.path.join(app.config['UPLOAD_FOLDER'], filename), target_size=(img_height, img_width)
     )
     img_array = tf.keras.utils.img_to_array(img) # type: ignore
+    img_array = cv2.resize(img_array, (224, 224))  # resize image to match model's expected sizing
     img_array = tf.expand_dims(img_array, 0) # Create a batch
     os.remove(os.path.join(app.config['UPLOAD_FOLDER'], filename))
     predictions = model.predict(img_array)
@@ -79,6 +126,18 @@ def upload_file(name: str):
             'message': "This image most likely belongs to {} with a {:.2f} percent confidence.".format(class_names[np.argmax(score)], 100 * np.max(score)),
             'class': str(class_names[np.argmax(score)]),
             'confidence': str(100 * np.max(score))
+        }
+    ), 200
+    
+@app.route("/")
+def main():
+    return jsonify(
+        {
+            'apidocs': "gfg.dhruvashaw.in/apidocs",
+            "dataset": "https://del1.vultrobjects.com/datasets/sorted.7z",
+            "message": "Use postman to try out the api, or visit the apidocs for more information.",
+            "research papaer": "https://del1.vultrobjects.com/datasets/Detection_of_Osteoarthritis_and_doing_KL_Grade_for_Knee_Osteoarthritis_using_deep_learning_techniques.pdf",
+            "Github Repo": "https://github.com/Dhruvacube/OsteoArithirites"
         }
     ), 200
 
