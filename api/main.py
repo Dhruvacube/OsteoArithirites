@@ -135,7 +135,7 @@ def main():
         {
             'apidocs': "gfg.dhruvashaw.in/apidocs",
             "dataset": "https://del1.vultrobjects.com/datasets/sorted.7z",
-            "message": "Use postman to try out the api, or visit the apidocs for more information.",
+            "message": "Use postman to try out the api, or visit the apidocs for more information. ANd to extract the dataset use 7zip application",
             "Research Paper": "https://del1.vultrobjects.com/datasets/Detection_of_Osteoarthritis_and_doing_KL_Grade_for_Knee_Osteoarthritis_using_deep_learning_techniques.pdf",
             "Github Repo": "https://github.com/Dhruvacube/OsteoArithirites"
         }
